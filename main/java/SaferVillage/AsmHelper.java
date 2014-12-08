@@ -29,91 +29,110 @@ import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-public class AsmHelper {
-
+public class AsmHelper
+{
 	public static boolean debug = false;
-	
 
 	public static byte[] loadclass(String zip_name, String classname)
 	{
-	      ZipFile zf = null;
-	      InputStream zi = null;
-	      byte[] bytes = null;;
-	      
-	      try
-	      {
-	         zf = new ZipFile(zip_name);
-	         ZipEntry ze = zf.getEntry(classname.replace('\\', '/'));
-	      
-	         if (ze != null)
-	         {
-	            int len = (int) ze.getSize();
-	            zi = zf.getInputStream(ze);
-	            bytes = new byte[len];
-	            readZip(zi, bytes);
-	         }
-	      } catch (IOException e) {
+		ZipFile zf = null;
+		InputStream zi = null;
+		byte[] bytes = null;;
+
+		try
+		{
+			zf = new ZipFile(zip_name);
+			ZipEntry ze = zf.getEntry(classname.replace('\\', '/'));
+
+			if (ze != null)
+			{
+				int len = (int) ze.getSize();
+				zi = zf.getInputStream(ze);
+				bytes = new byte[len];
+				readZip(zi, bytes);
+			}
+		}
+		catch (IOException e)
+		{
 			e.printStackTrace();
 			bytes = null;
-		  }
-	      finally
-	      {
-	         if (zi != null)
-	         {
-	             try {
+		}
+		finally
+		{
+			if (zi != null)
+			{
+				try
+				{
 					zi.close();
-				} catch (IOException e) {
+				}
+				catch (IOException e)
+				{
 					e.printStackTrace();
 				}
-	         }
-	      
-	         if (zf != null)
-	         {
-	             try {
+			}
+
+			if (zf != null)
+			{
+				try
+				{
 					zf.close();
-				} catch (IOException e) {
+				}
+				catch (IOException e)
+				{
 					e.printStackTrace();
 				}
-	         }
-	      }
-	      return bytes;
+			}
+		}
+		return bytes;
 	}
 
-	public static byte[] readZip(InputStream zi, byte[] bytes) throws IOException{
+	public static byte[] readZip(InputStream zi, byte[] bytes) throws IOException
+	{
 		int len = bytes.length;
-        int MAX_READ = 1024;
-        int readed = 0, readsize, ret;
-        while(readed < len) {
-            readsize = MAX_READ;
-            if (len - readed < MAX_READ ) {
-                readsize = len - readed;
-            }
+		int MAX_READ = 1024;
+		int readed = 0, readsize, ret;
+		while (readed < len)
+		{
+			readsize = MAX_READ;
+			if (len - readed < MAX_READ)
+			{
+				readsize = len - readed;
+			}
 			ret = zi.read(bytes, readed, readsize);
-            if (ret == -1) break;
-            readed += ret;
-        }
-        return bytes;
+			if (ret == -1) break;
+			readed += ret;
+		}
+		return bytes;
 	}
 
 	public static void exportClass(String name, byte[] buf)
-    { 
-       BufferedOutputStream fis = null;
-       try {
-          File file = new File(name + ".class");
-          fis = new BufferedOutputStream(new FileOutputStream(file));
-          fis.write(buf);
-       } catch (IOException e) {
-          e.printStackTrace();
-       } finally {
-          try {
-             if (fis != null) {
-                fis.close();
-             }
-          } catch (IOException e) {}
-       }
-       return;
-    }
-	
+	{
+		BufferedOutputStream fis = null;
+		try
+		{
+			File file = new File(name + ".class");
+			fis = new BufferedOutputStream(new FileOutputStream(file));
+			fis.write(buf);
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			try
+			{
+				if (fis != null)
+				{
+					fis.close();
+				}
+			}
+			catch (IOException e)
+			{}
+		}
+		return;
+	}
+
 	public static MethodNode cloneMethod(byte[] bytes, String name, String desc)
 	{
 		name = name.replaceAll("\\.", "/");
@@ -122,39 +141,46 @@ public class AsmHelper {
 		ClassNode classNode = new ClassNode();
 		classReader.accept(classNode, 0);
 		Iterator < MethodNode > methods = classNode.methods.iterator();
-		
+
 		MethodNode CopyMethod = null;
 		MethodNode addMethod = null;
-		try {
-			while (methods.hasNext()) {
+		try
+		{
+			while (methods.hasNext())
+			{
 				MethodNode m = methods.next();
 				//System.out.println("visit " + m.name + " " + m.desc);
-				if(m.name == null || m.desc == null) {
+				if (m.name == null || m.desc == null)
+				{
 					continue;
 				}
-				if(m.name.equals(name) && m.desc.equals(desc)) {
+				if (m.name.equals(name) && m.desc.equals(desc))
+				{
 					CopyMethod = m;
 					break;
 				}
 			}
-			if (CopyMethod != null) {
-				String[] exceptions = (String[])CopyMethod.exceptions.toArray(new String[0]);
+			if (CopyMethod != null)
+			{
+				String[] exceptions = (String[]) CopyMethod.exceptions.toArray(new String[0]);
 				addMethod = new MethodNode(CopyMethod.access, name, desc, CopyMethod.signature, exceptions);
 				InsnList addlist = new InsnList();
 				addlist.clear();
 				addlist.add(getPostReturnInsnList(CopyMethod));
 				addMethod.instructions.add(addlist);
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e)
+		{
 			e.printStackTrace();
-			System.out.println("Template method "+name+desc+" not found.");
+			System.out.println("Template method " + name + desc + " not found.");
 		}
 		return addMethod;
 	}
-	
+
 	public static MethodNode reallocMethod(MethodNode method, InsnList insns)
 	{
-		String[] exceptions = (String[])method.exceptions.toArray(new String[0]);
+		String[] exceptions = (String[]) method.exceptions.toArray(new String[0]);
 		MethodNode addMethod = new MethodNode(method.access, method.name, method.desc, method.signature, exceptions);
 		addMethod.instructions = insns;
 		return addMethod;
@@ -163,118 +189,129 @@ public class AsmHelper {
 	public static AbstractInsnNode getPreReturnInsn(MethodNode method)
 	{
 		int chk = 0;
-        AbstractInsnNode insn = method.instructions.getLast();
-        AbstractInsnNode ret = null;		
-        while (insn != null)
-        {
-           //System.out.println(insn + ":" + opcode2str.get(insn.getOpcode()));
-           if (chk == 0 && insn.getType() == INSN && (insn.getOpcode() >= IRETURN && insn.getOpcode() <= RETURN)) {
-        	   chk = 1;
-           } else
-           if (chk == 1 && insn.getType() == LINE) {
-        	   ret = insn;
-        	   chk = 2;
-           } else
-           if (chk == 2 && insn.getType() == LABEL) {
-        	   // Check: if before RETURN LABEL used in before lines
-        	   AbstractInsnNode tmp = method.instructions.getFirst();
-        	   while(tmp != null) {
-        		   if (tmp.getType() == JUMP_INSN && ((JumpInsnNode)tmp).label == insn) break;
-        		   if (tmp == insn) break;
-        		   tmp = tmp.getNext();
-        	   }
-        	   if (tmp != null && tmp != insn) {
-        		   return ret;
-        	   }
-        	   return insn;
-           }
-           insn = insn.getPrevious();
-        }
+		AbstractInsnNode insn = method.instructions.getLast();
+		AbstractInsnNode ret = null;
+		while (insn != null)
+		{
+			//System.out.println(insn + ":" + opcode2str.get(insn.getOpcode()));
+			if (chk == 0 && insn.getType() == INSN && (insn.getOpcode() >= IRETURN && insn.getOpcode() <= RETURN))
+			{
+				chk = 1;
+			}
+			else
+			if (chk == 1 && insn.getType() == LINE)
+			{
+				ret = insn;
+				chk = 2;
+			}
+			else
+			if (chk == 2 && insn.getType() == LABEL)
+			{
+				// Check: if before RETURN LABEL used in before lines
+				AbstractInsnNode tmp = method.instructions.getFirst();
+				while (tmp != null)
+				{
+					if (tmp.getType() == JUMP_INSN && ((JumpInsnNode) tmp).label == insn) break;
+					if (tmp == insn) break;
+					tmp = tmp.getNext();
+				}
+				if (tmp != null && tmp != insn)
+				{
+					return ret;
+				}
+				return insn;
+			}
+			insn = insn.getPrevious();
+		}
 		return ret;
 	}
-	
+
 	public static AbstractInsnNode getPostReturnInsn(MethodNode method)
 	{
 		int chk = 0;
-        AbstractInsnNode insn = method.instructions.getFirst();
-        
-        while(insn != null)
-        {
-           if (chk == 0 && insn.getType() == INSN && (insn.getOpcode() >= IRETURN && insn.getOpcode() <= RETURN)) {
-        	   chk = 1;
-           } else
-           if (chk == 1) {
-        	   return insn;
-           }
-           insn = insn.getNext();
-        }
+		AbstractInsnNode insn = method.instructions.getFirst();
+
+		while (insn != null)
+		{
+			if (chk == 0 && insn.getType() == INSN && (insn.getOpcode() >= IRETURN && insn.getOpcode() <= RETURN))
+			{
+				chk = 1;
+			}
+			else
+			if (chk == 1)
+			{
+				return insn;
+			}
+			insn = insn.getNext();
+		}
 		return null;
 	}
-	
+
 	public static InsnList getPreReturnInsnList(MethodNode method)
 	{
 		InsnList newlist = new InsnList();
 
 		AbstractInsnNode insn = method.instructions.getFirst();
 		AbstractInsnNode retr = getPreReturnInsn(method);
-		while (insn != null) {
-			if(insn == retr) break;
-        	if (debug) System.out.println(insn + ":" + opcode2str.get(insn.getOpcode()));
+		while (insn != null)
+		{
+			if (insn == retr) break;
+			if (debug) System.out.println(insn + ":" + opcode2str.get(insn.getOpcode()));
 			newlist.add(insn);
 			insn = insn.getNext();
 		}
 		return newlist;
 	}
-	
+
 	public static InsnList getPostReturnInsnList(MethodNode method)
 	{
 		InsnList newlist = new InsnList();
 
 		AbstractInsnNode insn = method.instructions.getFirst();
 		AbstractInsnNode retr = getPostReturnInsn(method);
-		while (insn != null) {
-			if(insn == retr) break;
-        	if (debug) System.out.println(insn + ":" + opcode2str.get(insn.getOpcode()));
+		while (insn != null)
+		{
+			if (insn == retr) break;
+			if (debug) System.out.println(insn + ":" + opcode2str.get(insn.getOpcode()));
 			newlist.add(insn);
 			insn = insn.getNext();
 		}
 		return newlist;
 	}
 
-	public static boolean isMethodEqual(AbstractInsnNode insn, int opcode, String owner, String name, String desc) {
+	public static boolean isMethodEqual(AbstractInsnNode insn, int opcode, String owner, String name, String desc)
+	{
 		owner = owner.replaceAll("\\.", "/");
 		name = name.replaceAll("\\.", "/");
 		desc = desc.replaceAll("\\.", "/");
-    	return insn.getOpcode() == opcode
-                && ((MethodInsnNode)insn).owner.equals(owner) 
-                && ((MethodInsnNode)insn).name.equals(name) 
-                && ((MethodInsnNode)insn).desc.equals(desc);
-    }
+		return insn.getOpcode() == opcode && ((MethodInsnNode) insn).owner.equals(owner) && ((MethodInsnNode) insn).name.equals(name) && ((MethodInsnNode) insn).desc.equals(desc);
+	}
 
-	public static boolean isFieldEqual(AbstractInsnNode insn, int opcode, String owner, String name, String desc) {
+	public static boolean isFieldEqual(AbstractInsnNode insn, int opcode, String owner, String name, String desc)
+	{
 		owner = owner.replaceAll("\\.", "/");
 		name = name.replaceAll("\\.", "/");
 		desc = desc.replaceAll("\\.", "/");
-    	return insn.getOpcode() == opcode
-                && ((FieldInsnNode)insn).owner.equals(owner) 
-                && ((FieldInsnNode)insn).name.equals(name) 
-                && ((FieldInsnNode)insn).desc.equals(desc);
-    }
-	
+		return insn.getOpcode() == opcode && ((FieldInsnNode) insn).owner.equals(owner) && ((FieldInsnNode) insn).name.equals(name) && ((FieldInsnNode) insn).desc.equals(desc);
+	}
+
 	public static byte[] remapClass(byte[] bytes, final String oldname, final String newname)
-	{	
-	    if(bytes == null) return null;
+	{
+		if (bytes == null) return null;
 
-		Remapper remapper = new Remapper() {
-            @Override
-            public String map(String s) {
-            	s = s.replaceAll(oldname, newname);
-            	return s;
-            }
+		Remapper remapper = new Remapper()
+		{
+			@Override
+			public String map(String s)
+			{
+				s = s.replaceAll(oldname, newname);
+				return s;
+			}
 		};
-	    
+
 		byte[] ret = null;
-		try {
+		try
+		{
 			ClassReader classReader = new ClassReader(bytes);
 			ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
 			ClassNode classNode = new ClassNode();
@@ -282,51 +319,50 @@ public class AsmHelper {
 			//classNode.name = newclassname;
 			classNode.accept(classWriter);
 			ret = classWriter.toByteArray();
-		} catch (Exception e) {}
+		}
+		catch (Exception e){}
 		return ret;
 	}
-	
-	public static HashMap<Integer, String> access2str = new HashMap<Integer, String>() {{
-			put(1, "ACC_PUBLIC");
-			put(2, "ACC_PRIVATE");
-			put(4, "ACC_PROTECTED");
-			put(8, "ACC_STATIC");
-			put(16, "ACC_FINAL");
-			put(32, "ACC_SUPER");
-			put(64, "ACC_VOLATILE");
-			put(128, "ACC_VARARGS");
-			put(256, "ACC_NATIVE");
-			put(512, "ACC_INTERFACE");
-			put(1024, "ACC_ABSTRACT");
-			put(2048, "ACC_STRICT");
-			put(4096, "ACC_SYNTHETIC");
-			put(8192, "ACC_ANNOTATION");
-			put(16384, "ACC_ENUM");
-			put(32768, "ACC_MANDATED");
-			put(131072, "ACC_DEPRECATED");
-		}
-	};
-	
-	public static HashMap<Integer, String> insntype2str = new HashMap<Integer, String>() {{
-		   put(0, "INSN");
-		   put(1, "INT_INSN");
-		   put(2, "VAR_INSN");
-		   put(3, "TYPE_INSN");
-		   put(4, "FIELD_INSN");
-		   put(5, "METHOD_INSN");
-		   put(6, "INVOKE_DYNAMIC_INSN");
-		   put(7, "JUMP_INSN");
-		   put(8, "LABEL");
-		   put(9, "LDC_INSN");
-		   put(10, "IINC_INSN");
-		   put(11, "TABLESWITCH_INSN");
-		   put(12, "LOOKUPSWITCH_INSN");
-		   put(13, "MULTIANEWARRAY_INSN");
-		   put(14, "FRAME");
-		   put(15, "LINE");
-		}
-	};
-	public static HashMap<Integer, String> array2str = new HashMap<Integer, String>() {{
+
+	public static HashMap < Integer, String > access2str = new HashMap < Integer, String > () {{
+		put(1, "ACC_PUBLIC");
+		put(2, "ACC_PRIVATE");
+		put(4, "ACC_PROTECTED");
+		put(8, "ACC_STATIC");
+		put(16, "ACC_FINAL");
+		put(32, "ACC_SUPER");
+		put(64, "ACC_VOLATILE");
+		put(128, "ACC_VARARGS");
+		put(256, "ACC_NATIVE");
+		put(512, "ACC_INTERFACE");
+		put(1024, "ACC_ABSTRACT");
+		put(2048, "ACC_STRICT");
+		put(4096, "ACC_SYNTHETIC");
+		put(8192, "ACC_ANNOTATION");
+		put(16384, "ACC_ENUM");
+		put(32768, "ACC_MANDATED");
+		put(131072, "ACC_DEPRECATED");
+	}};
+
+	public static HashMap < Integer, String > insntype2str = new HashMap < Integer, String > () {{
+		put(0, "INSN");
+		put(1, "INT_INSN");
+		put(2, "VAR_INSN");
+		put(3, "TYPE_INSN");
+		put(4, "FIELD_INSN");
+		put(5, "METHOD_INSN");
+		put(6, "INVOKE_DYNAMIC_INSN");
+		put(7, "JUMP_INSN");
+		put(8, "LABEL");
+		put(9, "LDC_INSN");
+		put(10, "IINC_INSN");
+		put(11, "TABLESWITCH_INSN");
+		put(12, "LOOKUPSWITCH_INSN");
+		put(13, "MULTIANEWARRAY_INSN");
+		put(14, "FRAME");
+		put(15, "LINE");
+	}};
+	public static HashMap < Integer, String > array2str = new HashMap < Integer, String > () {{
 		put(4, "T_BOOLEAN");
 		put(5, "T_CHAR");
 		put(6, "T_FLOAT");
@@ -334,9 +370,9 @@ public class AsmHelper {
 		put(8, "T_BYTE");
 		put(9, "T_SHORT");
 		put(10, "T_INT");
-		put(11, "T_LONG");	
+		put(11, "T_LONG");
 	}};
-	public static HashMap<Integer, String> handle2str = new HashMap<Integer, String>() {{
+	public static HashMap < Integer, String > handle2str = new HashMap < Integer, String > () {{
 		put(1, "H_GETFIELD");
 		put(2, "H_GETSTATIC");
 		put(3, "H_PUTFIELD");
@@ -348,17 +384,16 @@ public class AsmHelper {
 		put(9, "H_INVOKEINTERFACE");
 	}};
 
-	public static HashMap<Integer, String> frame2str = new HashMap<Integer, String>() {{
-			put(-1, "F_NEW");
-			put(0, "F_FULL");
-			put(1, "F_APPEND");
-			put(2, "F_CHOP");
-			put(3, "F_SAME");
-			put(4, "F_SAME1");
-		}
-	};
-	
-	public static HashMap<Integer, String> opcode2str = new HashMap<Integer, String>() {{
+	public static HashMap < Integer, String > frame2str = new HashMap < Integer, String > () {{
+		put(-1, "F_NEW");
+		put(0, "F_FULL");
+		put(1, "F_APPEND");
+		put(2, "F_CHOP");
+		put(3, "F_SAME");
+		put(4, "F_SAME1");
+	}};
+
+	public static HashMap < Integer, String > opcode2str = new HashMap < Integer, String > () {{
 		put(0, "NOP");
 		put(1, "ACONST_NULL");
 		put(2, "ICONST_M1");
@@ -516,8 +551,5 @@ public class AsmHelper {
 		put(197, "MULTIANEWARRAY");
 		put(198, "IFNULL");
 		put(199, "IFNONNULL");
-
 	}};
-		
-
 }
