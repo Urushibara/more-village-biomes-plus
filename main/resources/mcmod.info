@@ -1,0 +1,16 @@
+[
+{
+  "modid": "MVB-FORGE",
+  "name": "More Village Biomes+",
+  "description": "More types of villages for many biomes MOD for Forge.",
+  "version": "2.0.10.2",
+  "mcversion": "1.8",
+  "url": "http://forum.minecraftuser.jp/viewtopic.php?f=13&t=17617",
+  "updateUrl": "",
+  "authorList": ["MG001Maya"],
+  "credits": "More Village Biome(original) by shortwind",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
